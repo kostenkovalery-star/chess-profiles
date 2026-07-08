@@ -1,0 +1,2018 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Шахматные задачи</title>
+<style>
+  :root {
+    --bg: #FAF3E7;
+    --ink: #3E2723;
+    --ink-soft: #6D5B52;
+    --light-square: #F0D9B5;
+    --dark-square: #B58863;
+    --accent: #C9972B;
+    --accent-soft: #E8C77A;
+    --wrong: #B5563C;
+    --correct: #5E7C42;
+    --highlight: #F6E27A;
+    --hint: #FFB347;
+    --card-bg: #FFFDF8;
+    --shadow: 0 6px 18px rgba(62, 39, 35, 0.16);
+    --neon: #39FF14;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: radial-gradient(circle at top, #FFF8EC, var(--bg) 70%);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Verdana, sans-serif;
+    display: flex;
+    justify-content: center;
+    padding: 8px 6px 14px;
+  }
+
+  .app {
+    width: 100%;
+    max-width: 560px;
+  }
+
+  h1, h2 {
+    font-family: Georgia, "Times New Roman", serif;
+    font-weight: 700;
+    color: var(--ink);
+    margin: 0 0 6px;
+  }
+
+  h1 { font-size: 1.7rem; text-align: center; }
+  h2 { font-size: 1.25rem; text-align: center; }
+
+  .subtitle {
+    text-align: center;
+    color: var(--ink-soft);
+    font-size: 0.95rem;
+    margin-bottom: 24px;
+  }
+
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--accent-soft);
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+    padding: 14px;
+    margin-bottom: 8px;
+  }
+
+  button {
+    font-family: inherit;
+    font-size: 1rem;
+    border: none;
+    border-radius: 12px;
+    padding: 10px 14px;
+    cursor: pointer;
+    transition: transform 0.08s ease, filter 0.15s ease;
+  }
+  button:active { transform: scale(0.97); }
+
+  .btn-primary {
+    display: block;
+    width: 100%;
+    background: var(--accent);
+    color: #fff;
+    font-weight: 700;
+    font-size: 1.05rem;
+    margin-bottom: 12px;
+  }
+  .btn-primary:hover { filter: brightness(1.06); }
+
+  .btn-secondary {
+    display: block;
+    width: 100%;
+    background: transparent;
+    color: var(--ink);
+    border: 1.5px solid var(--accent-soft);
+    font-weight: 600;
+    margin-bottom: 12px;
+  }
+
+  .btn-row { display: flex; gap: 6px; flex-wrap: wrap; }
+  .btn-row button { flex: 1; min-width: 90px; font-size: 0.82rem; padding: 8px 6px; }
+
+  .btn-small {
+    background: var(--accent-soft);
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .btn-danger-outline {
+    background: transparent;
+    border: 1.5px solid var(--wrong);
+    color: var(--wrong);
+    font-weight: 600;
+  }
+
+  /* --- Табло (счётчик) --- */
+  .scoreboard-row {
+    display: flex;
+    align-items: stretch;
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+  .scoreboard-row .scoreboard {
+    flex: 3 1 0;
+    margin-bottom: 0;
+  }
+  .scoreboard-btn {
+    flex: 1 1 0;
+    background: #0a0a0a;
+    border-radius: 14px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 4px 2px;
+    box-shadow: inset 0 0 14px rgba(0,0,0,0.6), var(--shadow);
+  }
+  .scoreboard-btn-icon {
+    font-size: 1.5rem;
+    line-height: 1;
+    text-shadow: 0 0 6px var(--neon), 0 0 16px var(--neon);
+  }
+  .scoreboard-btn-label {
+    font-family: "Courier New", Courier, monospace;
+    font-size: 0.6rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #8a8a8a;
+  }
+
+  .task-row {
+    display: flex;
+    align-items: stretch;
+    gap: 6px;
+  }
+  .task-row-btn {
+    flex: 1 1 0;
+    background: var(--accent-soft);
+    color: var(--ink);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    padding: 6px 2px;
+    font-family: inherit;
+    border: none;
+    cursor: pointer;
+  }
+  .task-row-btn .icon { font-size: 1.6rem; line-height: 1; }
+  .task-row-btn .label { font-size: 0.68rem; font-weight: 600; }
+  .task-row .status-text {
+    flex: 2 1 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 4.6em;
+    margin: 0;
+  }
+  .scoreboard {
+    background: #0a0a0a;
+    border-radius: 14px;
+    padding: 8px 10px;
+    text-align: center;
+    box-shadow: inset 0 0 14px rgba(0,0,0,0.6), var(--shadow);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+  }
+  .scoreboard .big {
+    font-family: "Courier New", Courier, monospace;
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: var(--neon);
+    text-shadow: 0 0 6px var(--neon), 0 0 16px var(--neon);
+    white-space: nowrap;
+  }
+  /* --- Статус над доской --- */
+  .turn-badge {
+    text-align: center;
+    font-weight: 700;
+    font-size: 0.95rem;
+    margin-bottom: 4px;
+  }
+
+  /* --- Компактные карточки экрана доски --- */
+  .compact-card { padding: 8px 12px; margin-bottom: 6px; }
+  .info-line {
+    display: flex;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .task-text {
+    flex: 0 0 75%;
+    max-width: 75%;
+    font-size: 0.9rem;
+    line-height: 1.25;
+    display: flex;
+    align-items: center;
+  }
+  .turn-icon {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #FFE9A8;
+    border-radius: 10px;
+    font-size: 2.1rem;
+    line-height: 1;
+    padding: 4px 0;
+  }
+
+  /* --- Доска --- */
+  .board-wrap {
+    display: flex;
+    justify-content: center;
+    margin: 2px 0 6px;
+  }
+  .board {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    grid-template-rows: repeat(8, 1fr);
+    width: min(100vw - 16px, 560px);
+    aspect-ratio: 1;
+    border: 3px solid var(--accent);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+
+  .square {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: min(9vw, 42px);
+    min-width: 0;
+    min-height: 0;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .square.light { background: var(--light-square); }
+  .square.dark { background: var(--dark-square); }
+  .square.selected { background: var(--highlight) !important; }
+  .square.last-move { background: var(--highlight) !important; }
+  .square.hint { background: var(--hint) !important; }
+
+  .square .dot {
+    position: absolute;
+    width: 22%;
+    height: 22%;
+    border-radius: 50%;
+    background: rgba(94, 124, 66, 0.65);
+    pointer-events: none;
+  }
+
+  .piece { pointer-events: none; }
+  .piece.white {
+    color: #fff;
+    text-shadow:
+      1px 1px 0 #000, -1px -1px 0 #000,
+      1px -1px 0 #000, -1px 1px 0 #000,
+      2px 0 0 #000, -2px 0 0 #000,
+      0 2px 0 #000, 0 -2px 0 #000;
+  }
+  .piece.black { color: #111; }
+
+  /* --- Статус --- */
+  .status-text {
+    text-align: center;
+    font-size: 0.92rem;
+    min-height: 1.2em;
+    padding: 8px 10px;
+    line-height: 1.25;
+    border-radius: 10px;
+    background: #ffffff;
+    color: var(--ink);
+    font-weight: 600;
+    transition: background 0.25s ease, color 0.25s ease;
+  }
+  .status-text.wrong {
+    background: #E7A99C;
+    color: #ffffff;
+  }
+  .status-text.correct {
+    background: #C7DDAE;
+    color: #2F4B1F;
+  }
+
+  .history-list {
+    max-height: 300px;
+    overflow-y: auto;
+    margin: 10px 0;
+  }
+  .history-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 4px;
+    border-bottom: 1px solid #eee2cf;
+    font-size: 0.88rem;
+  }
+  .history-item .theme { color: var(--ink-soft); }
+  .empty-note {
+    color: var(--ink-soft);
+    font-style: italic;
+    text-align: center;
+    padding: 10px;
+  }
+
+  .tier-list button { text-align: left; }
+
+  .puzzle-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
+    gap: 8px;
+    max-height: 55vh;
+    overflow-y: auto;
+    padding: 4px;
+  }
+  .puzzle-cell {
+    aspect-ratio: 1;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #fff;
+    cursor: pointer;
+    background: var(--dark-square);
+    border: 2px solid var(--accent-soft);
+    transition: transform 0.1s ease;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .puzzle-cell:active { transform: scale(0.92); }
+  .puzzle-cell.solved {
+    background: var(--correct);
+    border-color: var(--correct);
+    cursor: default;
+  }
+</style>
+</head>
+<body>
+<video id="nosleep-video" muted loop playsinline style="position:fixed; width:1px; height:1px; opacity:0; pointer-events:none; top:-10px; left:-10px;"></video>
+<div class="app">
+
+  <!-- ЭКРАН: ГЛАВНОЕ МЕНЮ -->
+  <div id="screen-menu" class="screen active">
+    <h1>♟️ Шахматные задачи</h1>
+    <p class="subtitle">Автономный тренажёр — всё уже внутри, интернет не нужен</p>
+
+    <div class="card" id="active-profile-card" style="text-align:center; display:none;">
+      <div style="font-weight:700;">Профиль: <span id="active-profile-name"></span></div>
+      <div style="color:var(--ink-soft); font-size:0.85rem;">
+        Очков: <span id="active-profile-points"></span> · решено всего: <span id="active-profile-solved-count"></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <button class="btn-primary" onclick="startAnonymous()">👁️ Только посмотреть</button>
+      <button class="btn-primary" onclick="triggerLoadProfile()">📂 Загрузить профиль</button>
+      <button class="btn-primary" onclick="startNewPlayer()">🆕 Новый игрок</button>
+      <button class="btn-secondary" onclick="saveActiveProfile()">💾 Сохранить игрока</button>
+      <input type="file" id="profile-load-input" accept=".json,application/json" style="display:none" onchange="onProfileFileSelected(event)">
+    </div>
+
+    <div class="card">
+      <button class="btn-secondary" onclick="openHistory()">📖 История решений</button>
+    </div>
+  </div>
+
+  <!-- ЭКРАН: ВЫБОР СЛОЖНОСТИ -->
+  <div id="screen-tiers" class="screen">
+    <h2>Выбери сложность</h2>
+    <div class="card tier-list">
+      <button class="btn-primary" onclick="startTier('1')">⭐ В 1 ход</button>
+      <button class="btn-primary" onclick="startTier('2')">⭐⭐ В 2 хода</button>
+      <button class="btn-primary" onclick="startTier('3')">⭐⭐⭐ В 3 хода</button>
+      <button class="btn-primary" onclick="startTier('master')">🏆 МАСТЕР</button>
+      <button class="btn-secondary" onclick="showScreen('menu')">← Назад</button>
+    </div>
+  </div>
+
+  <!-- ЭКРАН: СЕТКА-САПЁР (выбор конкретной задачи внутри тира) -->
+  <div id="screen-grid" class="screen">
+    <h2>Выбери задачу</h2>
+    <div class="card compact-card" style="text-align:center;">
+      <span id="grid-progress-text"></span>
+    </div>
+    <div class="card">
+      <div class="puzzle-grid" id="puzzle-grid"></div>
+    </div>
+    <div class="card compact-card">
+      <button class="btn-secondary" onclick="showScreen('tiers')">← Другая сложность</button>
+    </div>
+  </div>
+
+  <!-- ЭКРАН: ДОСКА / РЕШЕНИЕ ЗАДАЧ -->
+  <div id="screen-board" class="screen">
+    <div class="scoreboard-row">
+      <button class="scoreboard-btn" onclick="renderGrid(); showScreen('grid')">
+        <span class="scoreboard-btn-icon">🏠</span>
+        <span class="scoreboard-btn-label">К сетке</span>
+      </button>
+      <div class="scoreboard">
+        <div class="big" id="counter-text">0 из 0</div>
+        <div class="big" id="points-text">0</div>
+      </div>
+      <button class="scoreboard-btn" onclick="restartPuzzle()" title="Переиграть этот пример заново">
+        <span class="scoreboard-btn-icon">🔄</span>
+        <span class="scoreboard-btn-label">Заново</span>
+      </button>
+    </div>
+
+    <div class="card compact-card">
+      <div class="info-line">
+        <span id="task-text" class="task-text"></span>
+        <span id="turn-badge" class="turn-icon"></span>
+      </div>
+    </div>
+
+    <div class="board-wrap">
+      <div class="board" id="board"></div>
+    </div>
+
+    <div class="card compact-card">
+      <div class="task-row">
+        <button class="task-row-btn" onclick="showSolution()">
+          <span class="icon">💡</span><span class="label">Подсказка</span>
+        </button>
+        <div id="status-text" class="status-text"></div>
+        <button class="task-row-btn" onclick="loadNextPuzzle()">
+          <span class="icon">➡️</span><span class="label">Дальше</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ЭКРАН: ИСТОРИЯ -->
+  <div id="screen-history" class="screen">
+    <h2>📖 История решений</h2>
+
+    <div class="card">
+      <div style="font-weight:700; margin-bottom:6px;">В этом сеансе</div>
+      <div class="history-list" id="session-history-list"></div>
+    </div>
+
+    <div class="card">
+      <div style="font-weight:700; margin-bottom:6px;">Из профиля (решено раньше)</div>
+      <div class="history-list" id="imported-history-list"></div>
+    </div>
+
+    <div class="card">
+      <p style="font-size:0.82rem; color:var(--ink-soft);">
+        Чтобы сохранить сегодняшний результат — вернитесь в главное меню и нажмите
+        «💾 Сохранить игрока». Загрузка/создание профиля — тоже в главном меню.
+      </p>
+    </div>
+
+    <button class="btn-secondary" onclick="showScreen('menu')">← Назад в меню</button>
+  </div>
+
+</div>
+
+<script>
+// ======================================================================
+// ДАННЫЕ: банк задач встроен целиком (автономность — без внешних файлов)
+// ======================================================================
+
+// ======================================================================
+// ШАХМАТНЫЙ ДВИЖОК (протестирован на всех 180 задачах через Node.js)
+// ======================================================================
+function fileOf(s) { return s % 8; }
+function rankOf(s) { return Math.floor(s / 8); }
+function sq(file, rank) { return rank * 8 + file; }
+function inBounds(file, rank) { return file >= 0 && file <= 7 && rank >= 0 && rank <= 7; }
+function squareName(s) { return "abcdefgh"[fileOf(s)] + (rankOf(s) + 1); }
+function squareFromName(name) {
+  const file = "abcdefgh".indexOf(name[0]);
+  const rank = parseInt(name[1], 10) - 1;
+  return sq(file, rank);
+}
+
+function parseFEN(fen) {
+  const parts = fen.trim().split(/\s+/);
+  const [placement, turn, castling] = parts;
+  const board = new Array(64).fill(null);
+  const ranks = placement.split("/");
+  for (let i = 0; i < 8; i++) {
+    const rank = 7 - i;
+    let file = 0;
+    for (const ch of ranks[i]) {
+      if (/\d/.test(ch)) {
+        file += parseInt(ch, 10);
+      } else {
+        const color = ch === ch.toUpperCase() ? "w" : "b";
+        const type = ch.toLowerCase();
+        board[sq(file, rank)] = { type, color };
+        file++;
+      }
+    }
+  }
+  const rights = {
+    K: castling.includes("K"), Q: castling.includes("Q"),
+    k: castling.includes("k"), q: castling.includes("q"),
+  };
+  return { board, turn, rights };
+}
+
+function generateMoves(state, from) {
+  const { board, turn } = state;
+  const piece = board[from];
+  if (!piece || piece.color !== turn) return [];
+  const moves = [];
+  const f0 = fileOf(from), r0 = rankOf(from);
+  const own = piece.color, opp = own === "w" ? "b" : "w";
+
+  const addSlide = (df, dr) => {
+    let f = f0 + df, r = r0 + dr;
+    while (inBounds(f, r)) {
+      const t = sq(f, r);
+      const occ = board[t];
+      if (!occ) { moves.push({ to: t }); }
+      else { if (occ.color === opp) moves.push({ to: t }); break; }
+      f += df; r += dr;
+    }
+  };
+
+  if (piece.type === "p") {
+    const dir = own === "w" ? 1 : -1;
+    const startRank = own === "w" ? 1 : 6;
+    const promoRank = own === "w" ? 7 : 0;
+    const one = sq(f0, r0 + dir);
+    if (inBounds(f0, r0 + dir) && !board[one]) {
+      moves.push({ to: one, promotion: rankOf(one) === promoRank });
+      const two = sq(f0, r0 + 2 * dir);
+      if (r0 === startRank && !board[two]) moves.push({ to: two });
+    }
+    for (const df of [-1, 1]) {
+      const f = f0 + df, r = r0 + dir;
+      if (!inBounds(f, r)) continue;
+      const t = sq(f, r);
+      if (board[t] && board[t].color === opp) moves.push({ to: t, promotion: rankOf(t) === promoRank });
+    }
+  } else if (piece.type === "n") {
+    for (const [df, dr] of [[1,2],[2,1],[2,-1],[1,-2],[-1,-2],[-2,-1],[-2,1],[-1,2]]) {
+      const f = f0 + df, r = r0 + dr;
+      if (!inBounds(f, r)) continue;
+      const t = sq(f, r);
+      if (!board[t] || board[t].color === opp) moves.push({ to: t });
+    }
+  } else if (piece.type === "b") {
+    for (const [df, dr] of [[1,1],[1,-1],[-1,1],[-1,-1]]) addSlide(df, dr);
+  } else if (piece.type === "r") {
+    for (const [df, dr] of [[1,0],[-1,0],[0,1],[0,-1]]) addSlide(df, dr);
+  } else if (piece.type === "q") {
+    for (const [df, dr] of [[1,1],[1,-1],[-1,1],[-1,-1],[1,0],[-1,0],[0,1],[0,-1]]) addSlide(df, dr);
+  } else if (piece.type === "k") {
+    for (const df of [-1,0,1]) for (const dr of [-1,0,1]) {
+      if (df === 0 && dr === 0) continue;
+      const f = f0 + df, r = r0 + dr;
+      if (!inBounds(f, r)) continue;
+      const t = sq(f, r);
+      if (!board[t] || board[t].color === opp) moves.push({ to: t });
+    }
+    const rank = own === "w" ? 0 : 7;
+    if (r0 === rank && f0 === 4) {
+      const rightK = own === "w" ? state.rights.K : state.rights.k;
+      const rightQ = own === "w" ? state.rights.Q : state.rights.q;
+      if (rightK && !board[sq(5, rank)] && !board[sq(6, rank)] &&
+          board[sq(7, rank)] && board[sq(7, rank)].type === "r" && board[sq(7, rank)].color === own) {
+        moves.push({ to: sq(6, rank), castle: "K" });
+      }
+      if (rightQ && !board[sq(3, rank)] && !board[sq(2, rank)] && !board[sq(1, rank)] &&
+          board[sq(0, rank)] && board[sq(0, rank)].type === "r" && board[sq(0, rank)].color === own) {
+        moves.push({ to: sq(2, rank), castle: "Q" });
+      }
+    }
+  }
+  return moves;
+}
+
+function applyMove(state, from, to, promotionChar) {
+  const { board } = state;
+  const piece = board[from];
+  if (!piece) throw new Error("Нет фигуры на " + squareName(from));
+
+  if (piece.type === "k" && Math.abs(fileOf(to) - fileOf(from)) === 2) {
+    const rank = rankOf(from);
+    if (fileOf(to) > fileOf(from)) { board[sq(5, rank)] = board[sq(7, rank)]; board[sq(7, rank)] = null; }
+    else { board[sq(3, rank)] = board[sq(0, rank)]; board[sq(0, rank)] = null; }
+  }
+
+  board[to] = promotionChar ? { type: promotionChar, color: piece.color } : piece;
+  board[from] = null;
+
+  if (piece.type === "k") {
+    if (piece.color === "w") { state.rights.K = false; state.rights.Q = false; }
+    else { state.rights.k = false; state.rights.q = false; }
+  }
+  if (piece.type === "r") {
+    if (from === sq(7,0)) state.rights.K = false;
+    if (from === sq(0,0)) state.rights.Q = false;
+    if (from === sq(7,7)) state.rights.k = false;
+    if (from === sq(0,7)) state.rights.q = false;
+  }
+  if (to === sq(7,0)) state.rights.K = false;
+  if (to === sq(0,0)) state.rights.Q = false;
+  if (to === sq(7,7)) state.rights.k = false;
+  if (to === sq(0,7)) state.rights.q = false;
+
+  state.turn = state.turn === "w" ? "b" : "w";
+}
+
+function applyUciMove(state, uci) {
+  const from = squareFromName(uci.slice(0, 2));
+  const to = squareFromName(uci.slice(2, 4));
+  const promotion = uci.length === 5 ? uci[4] : null;
+  applyMove(state, from, to, promotion);
+}
+
+// ======================================================================
+// СЛОВАРИ / ХЕЛПЕРЫ ОТОБРАЖЕНИЯ
+// ======================================================================
+const PIECE_SYMBOLS = {
+  wk:"♔", wq:"♕", wr:"♖", wb:"♗", wn:"♘", wp:"♙",
+  bk:"♚", bq:"♛", br:"♜", bb:"♝", bn:"♞", bp:"♟",
+};
+const FILE_HOME = { a:"R", b:"N", c:"B", d:"Q", e:"K", f:"B", g:"N", h:"R" };
+const THEME_RU = {
+  mateIn1: "мат в 1 ход", mateIn2: "мат в 2 хода", mateIn3: "мат в 3 хода",
+  fork: "вилка", pin: "связка", discoveredAttack: "вскрытый удар",
+  skewer: "сквозной удар", hangingPiece: "зевок фигуры",
+  advantage: "выигрыш преимущества", crushing: "решающий перевес",
+};
+const PROMO_RU = { q: "Ферзь", r: "Ладья", b: "Слон", n: "Конь" };
+function themeRu(t) { return THEME_RU[t] || t; }
+
+const THEME_TASK_RU = {
+  mateIn1: "Поставь мат в один ход!",
+  mateIn2: "Поставь мат в два хода.",
+  mateIn3: "Поставь мат в три хода.",
+  fork: "Найди вилку — напади одной фигурой сразу на две!",
+  pin: "Найди связку — прижми фигуру соперника к более ценной.",
+  discoveredAttack: "Сделай вскрытый удар — уведи фигуру и открой атаку другой.",
+};
+function taskText(theme) { return THEME_TASK_RU[theme] || "Найди лучший ход в этой позиции!"; }
+
+// ======================================================================
+// СОСТОЯНИЕ ПРИЛОЖЕНИЯ
+// ======================================================================
+let tierPuzzles = []; // стабильный список задач тира (не мутируется, нужен для сетки)
+let currentIndex = -1; // индекс текущей задачи в tierPuzzles
+let total = 0;
+let activeProfile = null; // null = анонимный режим, иначе { name, solved: [id,...] }
+let solvedCount = 0;
+let points = 0;
+let hintsUsedThisPuzzle = 0;
+let hintedLengths = new Set();
+let currentPuzzle = null;
+let boardState = null;
+let solutionRemaining = [];
+let selected = null;
+let pseudoTargets = [];
+let lastMove = null;
+let hintMove = null;
+let puzzleSolved = false;
+let sessionHistory = [];
+let highlightVersion = 0;
+
+// Порядок задач внутри каждого тира задаётся один раз линковщиком (Python-скрипт,
+// см. tools/04_linker.py) при формировании LESSONS_1..LESSONS_4PLUS — клиент здесь
+// ничего не вычисляет и не перемешивает, только читает готовый порядок как есть.
+function getByTier(tier) {
+  const map = { "1": LESSONS_1, "2": LESSONS_2, "3": LESSONS_3, "master": LESSONS_4PLUS };
+  return (map[tier] || []).slice();
+}
+
+function findPuzzleById(id) {
+  const all = [LESSONS_1, LESSONS_2, LESSONS_3, LESSONS_4PLUS];
+  for (const arr of all) {
+    const found = arr.find(p => p.id === id);
+    if (found) return found;
+  }
+  return null;
+}
+
+// ======================================================================
+// WAKE LOCK — не даём экрану гаснуть во время игры (если браузер поддерживает)
+// ======================================================================
+let wakeLock = null;
+
+async function requestWakeLock() {
+  try {
+    if ("wakeLock" in navigator) {
+      wakeLock = await navigator.wakeLock.request("screen");
+    }
+  } catch (e) {
+    // Не критично — просто экран будет гаснуть как обычно
+    console.log("Wake Lock недоступен:", e.message);
+  }
+}
+
+function releaseWakeLock() {
+  if (wakeLock) {
+    wakeLock.release();
+    wakeLock = null;
+  }
+}
+
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible" &&
+      document.getElementById("screen-board").classList.contains("active")) {
+    requestWakeLock();
+    playNoSleepVideo();
+  }
+});
+
+// --- Запасной способ (надёжнее Wake Lock на части Android-прошивок) ---
+// Зацикленное беззвучное видео 2x2px — старый, но проверенный приём (как в NoSleep.js):
+// многие производители агрессивно гасят экран, игнорируя Wake Lock API,
+// но считаются с "активным" видео на странице.
+const NOSLEEP_VIDEO_SRC = "data:video/mp4;base64,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";
+
+function playNoSleepVideo() {
+  const video = document.getElementById("nosleep-video");
+  if (!video) return;
+  if (video.getAttribute("src") !== NOSLEEP_VIDEO_SRC) {
+    video.setAttribute("src", NOSLEEP_VIDEO_SRC);
+    video.load();
+  }
+  video.play().catch(e => console.log("Видео-заглушка не запустилась:", e.message));
+}
+
+function pauseNoSleepVideo() {
+  const video = document.getElementById("nosleep-video");
+  if (video) video.pause();
+}
+
+// ======================================================================
+// НАВИГАЦИЯ ЭКРАНОВ
+// ======================================================================
+function showScreen(name) {
+  document.querySelectorAll(".screen").forEach(el => el.classList.remove("active"));
+  document.getElementById("screen-" + name).classList.add("active");
+  if (name === "board") {
+    requestWakeLock();
+    playNoSleepVideo();
+  } else {
+    releaseWakeLock();
+    pauseNoSleepVideo();
+  }
+  if (name === "menu") {
+    updateActiveProfileDisplay();
+  }
+}
+
+// ==================================================================
+// УПРАВЛЕНИЕ ПРОФИЛЕМ ИГРОКА
+// ==================================================================
+
+function updateActiveProfileDisplay() {
+  const card = document.getElementById("active-profile-card");
+  if (!activeProfile) {
+    card.style.display = "none";
+    return;
+  }
+  card.style.display = "block";
+  document.getElementById("active-profile-name").textContent = activeProfile.name;
+  document.getElementById("active-profile-points").textContent = String(points);
+  document.getElementById("active-profile-solved-count").textContent = String(activeProfile.solved.length);
+}
+
+function startAnonymous() {
+  activeProfile = null;
+  points = 0;
+  updateActiveProfileDisplay();
+  showScreen("tiers");
+}
+
+function startNewPlayer() {
+  const name = window.prompt("Введи своё имя:");
+  if (!name || !name.trim()) return;
+  activeProfile = { name: name.trim(), solved: [] };
+  points = 0;
+  updateActiveProfileDisplay();
+  showScreen("tiers");
+}
+
+function triggerLoadProfile() {
+  document.getElementById("profile-load-input").click();
+}
+
+function onProfileFileSelected(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const data = JSON.parse(reader.result);
+      if (!data.name) {
+        alert("Файл профиля не распознан — нет имени игрока.");
+        return;
+      }
+      activeProfile = {
+        name: String(data.name),
+        solved: Array.isArray(data.solved) ? data.solved : [],
+      };
+      points = typeof data.points === "number" ? data.points : 0;
+      updateActiveProfileDisplay();
+      showScreen("tiers");
+    } catch (e) {
+      alert("Не удалось прочитать файл профиля: " + e.message);
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = ""; // сброс, чтобы можно было выбрать тот же файл повторно
+}
+
+function sanitizeFilename(name) {
+  return name.replace(/[\\/:*?"<>|]/g, "_").trim() || "player";
+}
+
+function saveActiveProfile() {
+  if (!activeProfile) {
+    alert("Сначала загрузите или создайте игрока — анонимный сеанс сохранять нечего.");
+    return;
+  }
+
+  const solvedThisSession = sessionHistory.map(h => h.id);
+  const mergedSolved = Array.from(new Set([...activeProfile.solved, ...solvedThisSession]));
+
+  const payload = {
+    name: activeProfile.name,
+    points: points,
+    solved: mergedSolved,
+  };
+
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${sanitizeFilename(activeProfile.name)}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function startTier(tier) {
+  tierPuzzles = getByTier(tier);
+  total = tierPuzzles.length;
+  if (total === 0) {
+    alert("Задач такой сложности пока нет в банке.");
+    return;
+  }
+  showScreen("grid");
+  renderGrid();
+}
+
+function isPuzzleSolved(puzzle) {
+  if (activeProfile && activeProfile.solved.includes(puzzle.id)) return true;
+  return sessionHistory.some(h => h.id === puzzle.id);
+}
+
+function renderGrid() {
+  const gridEl = document.getElementById("puzzle-grid");
+  gridEl.innerHTML = "";
+  let solvedInTier = 0;
+
+  tierPuzzles.forEach((p, i) => {
+    const done = isPuzzleSolved(p);
+    if (done) solvedInTier++;
+
+    const cell = document.createElement("div");
+    cell.className = "puzzle-cell" + (done ? " solved" : "");
+    if (done) {
+      cell.textContent = "✓";
+    } else {
+      cell.onclick = () => openPuzzleAtIndex(i);
+    }
+    gridEl.appendChild(cell);
+  });
+
+  solvedCount = solvedInTier;
+  document.getElementById("grid-progress-text").textContent = `Решено: ${solvedInTier} из ${total}`;
+}
+
+function openPuzzleAtIndex(i) {
+  currentIndex = i;
+  currentPuzzle = tierPuzzles[i];
+  showScreen("board");
+  setupPuzzle(currentPuzzle);
+  setStatus("Твой ход!");
+}
+
+let advanceVersion = 0;
+
+function scheduleAutoAdvance() {
+  advanceVersion++;
+  const myVersion = advanceVersion;
+  setTimeout(() => {
+    if (advanceVersion === myVersion) advanceToNextUnsolved();
+  }, 1200);
+}
+
+function advanceToNextUnsolved() {
+  advanceVersion++; // на случай, если сработает и отложенный, и ручной вызов
+  for (let i = currentIndex + 1; i < tierPuzzles.length; i++) {
+    if (!isPuzzleSolved(tierPuzzles[i])) {
+      openPuzzleAtIndex(i);
+      return;
+    }
+  }
+  showScreen("grid");
+  renderGrid();
+}
+
+function loadNextPuzzle() {
+  advanceToNextUnsolved();
+}
+
+function restartPuzzle() {
+  if (!currentPuzzle) return;
+  setupPuzzle(currentPuzzle);
+  setStatus("Начали заново. Твой ход!");
+}
+
+function setupPuzzle(puzzle) {
+  boardState = parseFEN(puzzle.fen);
+  solutionRemaining = puzzle.solution.slice();
+  selected = null; pseudoTargets = []; lastMove = null; hintMove = null; puzzleSolved = false;
+  hintsUsedThisPuzzle = 0;
+  hintedLengths = new Set();
+  highlightVersion++;
+  updateTurnBadge();
+  updateTaskText(puzzle);
+  renderBoard();
+}
+
+function updateTurnBadge() {
+  const el = document.getElementById("turn-badge");
+  const isWhite = boardState.turn === "w";
+  el.textContent = isWhite ? "🐈" : "🐈‍⬛";
+  el.title = isWhite ? "Играешь за белых" : "Играешь за чёрных";
+}
+
+function updateTaskText(puzzle) {
+  document.getElementById("task-text").textContent = "🎯 " + taskText(puzzle.matched_theme);
+}
+
+function setStatus(text, cls) {
+  const el = document.getElementById("status-text");
+  el.textContent = text;
+  el.className = "status-text" + (cls ? " " + cls : "");
+}
+
+function updateCounterDisplay() {
+  document.getElementById("counter-text").textContent = `${solvedCount} из ${total}`;
+  document.getElementById("points-text").textContent = `${points}`;
+}
+
+// Подсвечивает last-move и, если задан таймаут, снимает подсветку автоматически через ms —
+// если за это время не случилось ничего нового (проверяется через highlightVersion).
+function setLastMoveHighlight(move, ms) {
+  lastMove = move;
+  highlightVersion++;
+  const myVersion = highlightVersion;
+  if (ms) {
+    setTimeout(() => {
+      if (highlightVersion === myVersion) {
+        lastMove = null;
+        renderBoard();
+      }
+    }, ms);
+  }
+}
+
+// ======================================================================
+// ОТРИСОВКА ДОСКИ
+// ======================================================================
+function renderBoard() {
+  const boardEl = document.getElementById("board");
+  boardEl.innerHTML = "";
+
+  for (let r = 7; r >= 0; r--) {
+    for (let f = 0; f < 8; f++) {
+      const s = sq(f, r);
+      const div = document.createElement("div");
+      const isLight = (r + f) % 2 === 0;
+      div.className = "square " + (isLight ? "light" : "dark");
+
+      if (lastMove && (s === lastMove.from || s === lastMove.to)) div.classList.add("last-move");
+      if (selected === s) div.classList.add("selected");
+      if (hintMove && (s === hintMove.from || s === hintMove.to)) div.classList.add("hint");
+
+      const piece = boardState.board[s];
+      if (piece) {
+        const glyph = document.createElement("span");
+        glyph.className = "piece " + (piece.color === "w" ? "white" : "black");
+        glyph.textContent = PIECE_SYMBOLS[piece.color + piece.type];
+        div.appendChild(glyph);
+      }
+
+      if (pseudoTargets.some(m => m.to === s)) {
+        const dot = document.createElement("div");
+        dot.className = "dot";
+        div.appendChild(dot);
+      }
+
+      div.addEventListener("click", () => onSquareClick(s));
+      boardEl.appendChild(div);
+    }
+  }
+}
+
+// ======================================================================
+// ЛОГИКА ХОДОВ
+// ======================================================================
+function onSquareClick(s) {
+  if (puzzleSolved) return;
+
+  if (selected === null) {
+    const piece = boardState.board[s];
+    if (piece && piece.color === boardState.turn) {
+      selected = s;
+      pseudoTargets = generateMoves(boardState, s);
+      renderBoard();
+    }
+    return;
+  }
+
+  const target = pseudoTargets.find(m => m.to === s);
+  if (target) {
+    attemptMove(selected, s);
+    return;
+  }
+
+  const piece = boardState.board[s];
+  if (piece && piece.color === boardState.turn) {
+    selected = s;
+    pseudoTargets = generateMoves(boardState, s);
+    renderBoard();
+    return;
+  }
+
+  selected = null; pseudoTargets = [];
+  renderBoard();
+}
+
+function attemptMove(from, to) {
+  const expectedUci = solutionRemaining[0];
+  const expFrom = squareFromName(expectedUci.slice(0, 2));
+  const expTo = squareFromName(expectedUci.slice(2, 4));
+
+  if (from !== expFrom || to !== expTo) {
+    selected = null; pseudoTargets = [];
+    renderBoard();
+    setStatus("❌ Неправильный ход. Попробуй ещё раз!", "wrong");
+    return;
+  }
+
+  applyUciMove(boardState, expectedUci);
+  setLastMoveHighlight({ from, to }, null);
+  solutionRemaining.shift();
+  selected = null; pseudoTargets = []; hintMove = null;
+
+  if (solutionRemaining.length === 0) {
+    puzzleSolved = true;
+    solvedCount++;
+    const k = Math.floor((currentPuzzle.solution.length + 1) / 2);
+    const earned = Math.max(1, (k + 1) - hintsUsedThisPuzzle);
+    points += earned;
+    sessionHistory.push({
+      id: currentPuzzle.id, theme: currentPuzzle.matched_theme,
+      rating: currentPuzzle.rating, solvedAt: new Date().toISOString(), points: earned,
+    });
+    updateCounterDisplay();
+    renderBoard();
+    setStatus(`🎉 Задание выполнено! +${earned} очков`, "correct");
+    scheduleAutoAdvance();
+    return;
+  }
+
+  const replyUci = solutionRemaining.shift();
+  applyUciMove(boardState, replyUci);
+  setLastMoveHighlight(
+    { from: squareFromName(replyUci.slice(0, 2)), to: squareFromName(replyUci.slice(2, 4)) },
+    2000
+  );
+  renderBoard();
+  setStatus("✅ Верно! Противник сходил. Твой ход!", "correct");
+}
+
+function showSolution() {
+  if (!solutionRemaining.length) return;
+  if (!hintedLengths.has(solutionRemaining.length)) {
+    hintedLengths.add(solutionRemaining.length);
+    hintsUsedThisPuzzle++;
+  }
+  const uci = solutionRemaining[0];
+  hintMove = {
+    from: squareFromName(uci.slice(0, 2)),
+    to: squareFromName(uci.slice(2, 4)),
+    promotion: uci.length === 5 ? uci[4] : null,
+  };
+  renderBoard();
+  const promoText = hintMove.promotion ? ` (превращение в ${PROMO_RU[hintMove.promotion] || "?"})` : "";
+  setStatus(`💡 Решение: ${squareName(hintMove.from)} → ${squareName(hintMove.to)}${promoText}`);
+}
+
+// ======================================================================
+// ИСТОРИЯ / ПРОГРЕСС
+// ======================================================================
+function openHistory() {
+  renderHistoryLists();
+  showScreen("history");
+}
+
+function renderHistoryLists() {
+  const sessionEl = document.getElementById("session-history-list");
+  const importedEl = document.getElementById("imported-history-list");
+
+  sessionEl.innerHTML = sessionHistory.length
+    ? sessionHistory.map(h =>
+        `<div class="history-item"><span>${h.id}</span><span class="theme">${themeRu(h.theme)}</span></div>`
+      ).join("")
+    : '<div class="empty-note">Пока ничего не решено в этом сеансе</div>';
+
+  const profileSolved = activeProfile ? activeProfile.solved : [];
+  importedEl.innerHTML = profileSolved.length
+    ? profileSolved.map(id => {
+        const puzzle = findPuzzleById(id);
+        const themeLabel = puzzle ? themeRu(puzzle.matched_theme) : "?";
+        return `<div class="history-item"><span>${id}</span><span class="theme">${themeLabel}</span></div>`;
+      }).join("")
+    : '<div class="empty-note">Профиль не загружен, или в нём пока ничего не решено</div>';
+}
+</script>
+<script>
+// ======================================================================
+// ДАННЫЕ ЗАДАЧ — сюда вставляется (полностью заменяя этот блок) содержимое
+// lessons_output.js, которое выдаёт tools/04_linker.py.
+// Используется var (не const) — старый блок можно смело заменять новым
+// без ошибки "identifier already declared".
+// ======================================================================
+var LESSONS_1 = [
+  {
+    "id": "nZDQ6",
+    "fen": "7k/Q4R2/8/8/8/P1P5/3q2r1/5K2 b - - 10 46",
+    "solution": [
+      "d2e2"
+    ],
+    "rating": 1169,
+    "themes": [
+      "endgame",
+      "mate",
+      "mateIn1",
+      "oneMove",
+      "triangleMate"
+    ],
+    "matched_theme": "mateIn1",
+    "source_url": "https://lichess.org/CWcoBtBE#91"
+  },
+  {
+    "id": "zAbaw",
+    "fen": "6Q1/8/5K2/7k/8/8/8/3q4 w - - 0 52",
+    "solution": [
+      "g8g5"
+    ],
+    "rating": 1307,
+    "themes": [
+      "endgame",
+      "mate",
+      "mateIn1",
+      "oneMove",
+      "queenEndgame"
+    ],
+    "matched_theme": "mateIn1",
+    "source_url": "https://lichess.org/uqHhq1sX/black#102"
+  },
+  {
+    "id": "7dgHs",
+    "fen": "8/5R2/4p1Pk/p2b3P/1p5K/8/6r1/8 w - - 0 48",
+    "solution": [
+      "f7h7"
+    ],
+    "rating": 990,
+    "themes": [
+      "endgame",
+      "mate",
+      "mateIn1",
+      "oneMove"
+    ],
+    "matched_theme": "mateIn1",
+    "source_url": "https://lichess.org/drl0Iifb/black#94"
+  },
+  {
+    "id": "CRvUJ",
+    "fen": "8/8/2N2p2/3b1ppp/5k2/2B2P2/6K1/8 w - - 12 76",
+    "solution": [
+      "c3d2"
+    ],
+    "rating": 1406,
+    "themes": [
+      "endgame",
+      "mate",
+      "mateIn1",
+      "oneMove"
+    ],
+    "matched_theme": "mateIn1",
+    "source_url": "https://lichess.org/QmmoX7e0/black#150"
+  },
+  {
+    "id": "W1JON",
+    "fen": "8/8/5Qpk/3q4/1pr2P2/7P/6PK/8 w - - 0 47",
+    "solution": [
+      "f6h8"
+    ],
+    "rating": 1300,
+    "themes": [
+      "endgame",
+      "master",
+      "mate",
+      "mateIn1",
+      "oneMove"
+    ],
+    "matched_theme": "mateIn1",
+    "source_url": "https://lichess.org/osqGd6Xj/black#92"
+  },
+  {
+    "id": "IiMah",
+    "fen": "8/8/p3q3/2Bp1rp1/k7/2Q1P3/4K3/8 w - - 0 59",
+    "solution": [
+      "c3b4"
+    ],
+    "rating": 1182,
+    "themes": [
+      "endgame",
+      "mate",
+      "mateIn1",
+      "oneMove"
+    ],
+    "matched_theme": "mateIn1",
+    "source_url": "https://lichess.org/DdrRb5dJ/black#116"
+  },
+  {
+    "id": "IGotg",
+    "fen": "8/8/5p2/6p1/8/2P2kPp/7P/rR3K2 b - - 2 49",
+    "solution": [
+      "a1b1"
+    ],
+    "rating": 530,
+    "themes": [
+      "endgame",
+      "hangingPiece",
+      "mate",
+      "mateIn1",
+      "oneMove",
+      "rookEndgame"
+    ],
+    "matched_theme": "mateIn1",
+    "source_url": "https://lichess.org/kdRsxGAM#97"
+  },
+  {
+    "id": "9q6ze",
+    "fen": "8/PQ5p/6pk/8/5pK1/q6P/6P1/8 b - - 3 53",
+    "solution": [
+      "a3g3"
+    ],
+    "rating": 934,
+    "themes": [
+      "endgame",
+      "mate",
+      "mateIn1",
+      "oneMove",
+      "queenEndgame"
+    ],
+    "matched_theme": "mateIn1",
+    "source_url": "https://lichess.org/htF4hJEj#105"
+  },
+  {
+    "id": "H2S1e",
+    "fen": "6KQ/1r6/6k1/8/6P1/8/5P2/8 b - - 0 57",
+    "solution": [
+      "b7b8"
+    ],
+    "rating": 982,
+    "themes": [
+      "endgame",
+      "master",
+      "mate",
+      "mateIn1",
+      "oneMove",
+      "queenRookEndgame"
+    ],
+    "matched_theme": "mateIn1",
+    "source_url": "https://lichess.org/nQUXBC9e#113"
+  },
+  {
+    "id": "LDEpQ",
+    "fen": "6Q1/5p1p/8/7P/2b1P3/1kb5/1p6/1K6 b - - 0 53",
+    "solution": [
+      "c4d3"
+    ],
+    "rating": 802,
+    "themes": [
+      "endgame",
+      "mate",
+      "mateIn1",
+      "oneMove"
+    ],
+    "matched_theme": "mateIn1",
+    "source_url": "https://lichess.org/EPPTDMPd#105"
+  },
+  {
+    "id": "dKrB7",
+    "fen": "8/5k2/5P1p/7K/5RP1/8/8/6r1 b - - 1 49",
+    "solution": [
+      "g1h1"
+    ],
+    "rating": 722,
+    "themes": [
+      "endgame",
+      "master",
+      "mate",
+      "mateIn1",
+      "oneMove",
+      "rookEndgame"
+    ],
+    "matched_theme": "mateIn1",
+    "source_url": "https://lichess.org/zCkDMF2i#97"
+  },
+  {
+    "id": "hOBKt",
+    "fen": "8/P7/8/8/8/2P2k2/p4p2/5K2 b - - 0 53",
+    "solution": [
+      "a2a1q"
+    ],
+    "rating": 427,
+    "themes": [
+      "advancedPawn",
+      "endgame",
+      "master",
+      "mate",
+      "mateIn1",
+      "oneMove",
+      "promotion"
+    ],
+    "matched_theme": "mateIn1",
+    "source_url": "https://lichess.org/wiXXD573#105"
+  },
+  {
+    "id": "f3tcj",
+    "fen": "6R1/8/8/5p1P/8/5k2/3r4/5K2 b - - 0 56",
+    "solution": [
+      "d2d1"
+    ],
+    "rating": 1095,
+    "themes": [
+      "endgame",
+      "mate",
+      "mateIn1",
+      "oneMove",
+      "rookEndgame"
+    ],
+    "matched_theme": "mateIn1",
+    "source_url": "https://lichess.org/OG1TBirn#111"
+  },
+  {
+    "id": "vna0H",
+    "fen": "8/1Q6/6pk/8/6PK/4q3/8/8 b - - 2 55",
+    "solution": [
+      "g6g5"
+    ],
+    "rating": 1531,
+    "themes": [
+      "endgame",
+      "mate",
+      "mateIn1",
+      "oneMove",
+      "queenEndgame"
+    ],
+    "matched_theme": "mateIn1",
+    "source_url": "https://lichess.org/o07B3Bs7#109"
+  }
+];
+
+var LESSONS_2 = [
+  {
+    "id": "IiSMz",
+    "fen": "r7/P6p/6p1/5p2/5P1k/4K3/8/R7 w - - 0 53",
+    "solution": [
+      "e3f3",
+      "g6g5",
+      "a1h1"
+    ],
+    "rating": 1752,
+    "themes": [
+      "endgame",
+      "mate",
+      "mateIn2",
+      "rookEndgame",
+      "short"
+    ],
+    "matched_theme": "mateIn2",
+    "source_url": "https://lichess.org/CLtIq9Gd/black#104"
+  },
+  {
+    "id": "RMPNB",
+    "fen": "1b6/8/4B3/8/8/2P3p1/1P2kR2/6K1 b - - 0 44",
+    "solution": [
+      "g3f2",
+      "g1g2",
+      "f2f1q"
+    ],
+    "rating": 945,
+    "themes": [
+      "advancedPawn",
+      "endgame",
+      "mate",
+      "mateIn2",
+      "promotion",
+      "short"
+    ],
+    "matched_theme": "mateIn2",
+    "source_url": "https://lichess.org/QQLU9x7G#87"
+  },
+  {
+    "id": "UXHJ9",
+    "fen": "8/7R/6RP/1kp5/1p6/7r/PP6/K7 b - - 1 48",
+    "solution": [
+      "h3h1",
+      "g6g1",
+      "h1g1"
+    ],
+    "rating": 859,
+    "themes": [
+      "backRankMate",
+      "endgame",
+      "mate",
+      "mateIn2",
+      "rookEndgame",
+      "short"
+    ],
+    "matched_theme": "mateIn2",
+    "source_url": "https://lichess.org/ftKnhtSY#95"
+  },
+  {
+    "id": "X2s51",
+    "fen": "2B5/6k1/8/3N4/3nn1PK/7P/8/8 b - - 4 55",
+    "solution": [
+      "d4f3",
+      "h4h5",
+      "e4g3"
+    ],
+    "rating": 1487,
+    "themes": [
+      "endgame",
+      "mate",
+      "mateIn2",
+      "short"
+    ],
+    "matched_theme": "mateIn2",
+    "source_url": "https://lichess.org/0sUr3noS#109"
+  },
+  {
+    "id": "ryBHU",
+    "fen": "8/5pk1/4r1p1/R5Kp/7P/6P1/5P2/8 b - - 11 52",
+    "solution": [
+      "e6e4",
+      "f2f3",
+      "f7f6"
+    ],
+    "rating": 1978,
+    "themes": [
+      "endgame",
+      "mate",
+      "mateIn2",
+      "rookEndgame",
+      "short"
+    ],
+    "matched_theme": "mateIn2",
+    "source_url": "https://lichess.org/KsfvGrNd#103"
+  },
+  {
+    "id": "QvBcH",
+    "fen": "8/p4R2/Pp6/4N2p/2p5/6k1/1r6/7K b - - 3 51",
+    "solution": [
+      "b2b1",
+      "f7f1",
+      "b1f1"
+    ],
+    "rating": 1152,
+    "themes": [
+      "endgame",
+      "mate",
+      "mateIn2",
+      "short"
+    ],
+    "matched_theme": "mateIn2",
+    "source_url": "https://lichess.org/dlqvI9MH#101"
+  },
+  {
+    "id": "kr2zF",
+    "fen": "2k5/1ppbQ3/5P2/3pn3/2q5/8/3K4/8 w - - 1 44",
+    "solution": [
+      "e7f8",
+      "d7e8",
+      "f8e8"
+    ],
+    "rating": 1166,
+    "themes": [
+      "endgame",
+      "mate",
+      "mateIn2",
+      "short"
+    ],
+    "matched_theme": "mateIn2",
+    "source_url": "https://lichess.org/Zsx4jWxN/black#86"
+  },
+  {
+    "id": "M9DIQ",
+    "fen": "8/5k2/6p1/8/3Nn1R1/3KP3/r4P2/8 b - - 33 66",
+    "solution": [
+      "e4f2",
+      "d3c3",
+      "f2g4"
+    ],
+    "rating": 1338,
+    "themes": [
+      "crushing",
+      "endgame",
+      "fork",
+      "short"
+    ],
+    "matched_theme": "fork",
+    "source_url": "https://lichess.org/qgEzk8RH#131"
+  },
+  {
+    "id": "vAuX6",
+    "fen": "8/8/2p3B1/4kn2/R5P1/5K2/8/2r5 b - - 0 50",
+    "solution": [
+      "f5h4",
+      "f3e2",
+      "h4g6"
+    ],
+    "rating": 1564,
+    "themes": [
+      "advantage",
+      "endgame",
+      "fork",
+      "short"
+    ],
+    "matched_theme": "fork",
+    "source_url": "https://lichess.org/RhrcgQ8b#99"
+  },
+  {
+    "id": "WlGbh",
+    "fen": "5k2/5p2/1r6/1pN3p1/3P4/5K2/5P2/8 w - - 2 39",
+    "solution": [
+      "c5d7",
+      "f8e7",
+      "d7b6"
+    ],
+    "rating": 697,
+    "themes": [
+      "advantage",
+      "endgame",
+      "fork",
+      "short"
+    ],
+    "matched_theme": "fork",
+    "source_url": "https://lichess.org/UMC5ktoh/black#76"
+  },
+  {
+    "id": "LfI0d",
+    "fen": "8/7k/5b2/3N1K2/2p1rP2/8/8/8 w - - 0 56",
+    "solution": [
+      "d5f6",
+      "h7g7",
+      "f6e4"
+    ],
+    "rating": 950,
+    "themes": [
+      "crushing",
+      "endgame",
+      "fork",
+      "short"
+    ],
+    "matched_theme": "fork",
+    "source_url": "https://lichess.org/fYXHB6pu/black#110"
+  },
+  {
+    "id": "MY7Tn",
+    "fen": "8/6p1/7p/8/P4P2/5rk1/1K6/R7 w - - 0 45",
+    "solution": [
+      "a1a3",
+      "f3a3",
+      "b2a3"
+    ],
+    "rating": 1797,
+    "themes": [
+      "crushing",
+      "endgame",
+      "pin",
+      "rookEndgame",
+      "short"
+    ],
+    "matched_theme": "pin",
+    "source_url": "https://lichess.org/Of1s9FQR/black#88"
+  },
+  {
+    "id": "IRbiD",
+    "fen": "7k/5r2/5r2/6Q1/4P2K/8/8/8 b - - 12 54",
+    "solution": [
+      "f7h7",
+      "h4g4",
+      "h7g7"
+    ],
+    "rating": 1330,
+    "themes": [
+      "crushing",
+      "endgame",
+      "pin",
+      "queenRookEndgame",
+      "short"
+    ],
+    "matched_theme": "pin",
+    "source_url": "https://lichess.org/V7fODTeG#107"
+  },
+  {
+    "id": "aZeVd",
+    "fen": "8/8/p4k2/P4r2/R5K1/5p2/5P2/8 w - - 1 52",
+    "solution": [
+      "a4f4",
+      "f5f4",
+      "g4f4"
+    ],
+    "rating": 917,
+    "themes": [
+      "crushing",
+      "endgame",
+      "pin",
+      "rookEndgame",
+      "short"
+    ],
+    "matched_theme": "pin",
+    "source_url": "https://lichess.org/mEwceYBN/black#102"
+  }
+];
+
+var LESSONS_3 = [
+  {
+    "id": "NN0M1",
+    "fen": "5rk1/pQ4pp/4q3/2PP4/8/P2P1p2/4nPPP/R4R1K b - - 2 25",
+    "solution": [
+      "f3g2",
+      "h1g2",
+      "e6g4",
+      "g2h1",
+      "g4f3"
+    ],
+    "rating": 1394,
+    "themes": [
+      "advancedPawn",
+      "attraction",
+      "endgame",
+      "long",
+      "mate",
+      "mateIn3"
+    ],
+    "matched_theme": "mateIn3",
+    "source_url": "https://lichess.org/uA71mp1D#49"
+  },
+  {
+    "id": "N8ksI",
+    "fen": "r4k2/5prp/p2p1Q2/1p3P2/4R3/3PK3/PP4qP/5R2 w - - 0 31",
+    "solution": [
+      "f6e7",
+      "f8g8",
+      "e7e8",
+      "a8e8",
+      "e4e8"
+    ],
+    "rating": 1684,
+    "themes": [
+      "backRankMate",
+      "endgame",
+      "long",
+      "mate",
+      "mateIn3",
+      "sacrifice"
+    ],
+    "matched_theme": "mateIn3",
+    "source_url": "https://lichess.org/5YfSGdLc/black#60"
+  },
+  {
+    "id": "lnmcr",
+    "fen": "r4rk1/pp3p1p/2pp4/5Nqp/2n1P3/2Q2P2/PPP2P2/1K1R4 w - - 0 21",
+    "solution": [
+      "f5e7",
+      "g5e7",
+      "d1g1",
+      "e7g5",
+      "g1g5"
+    ],
+    "rating": 1905,
+    "themes": [
+      "kingsideAttack",
+      "long",
+      "master",
+      "mate",
+      "mateIn3",
+      "middlegame",
+      "sacrifice"
+    ],
+    "matched_theme": "mateIn3",
+    "source_url": "https://lichess.org/s3rDukJD/black#40"
+  },
+  {
+    "id": "bP3oc",
+    "fen": "3r1r1k/ppp4p/5p2/8/1P1B4/P1N2P1q/5KR1/3R4 w - - 0 23",
+    "solution": [
+      "d4f6",
+      "f8f6",
+      "d1d8",
+      "f6f8",
+      "d8f8"
+    ],
+    "rating": 921,
+    "themes": [
+      "deflection",
+      "discoveredAttack",
+      "long",
+      "mate",
+      "mateIn3",
+      "middlegame"
+    ],
+    "matched_theme": "mateIn3",
+    "source_url": "https://lichess.org/cgEJzEZo/black#44"
+  },
+  {
+    "id": "xe6AY",
+    "fen": "r1b1kb1r/1p2qp1p/pBn3p1/3np3/2N5/2P2P2/PP1NB1PP/R2QR1K1 b kq - 1 16",
+    "solution": [
+      "d5b6",
+      "c4b6",
+      "e7c5",
+      "g1h1",
+      "c5b6"
+    ],
+    "rating": 1626,
+    "themes": [
+      "crushing",
+      "fork",
+      "long",
+      "opening"
+    ],
+    "matched_theme": "fork",
+    "source_url": "https://lichess.org/eWLluyD7#31"
+  },
+  {
+    "id": "CZZ3N",
+    "fen": "2r2rk1/3Bp1b1/4pnQ1/q2p3p/p2P3P/P1N1BP2/1P4P1/2KR3R b - - 0 21",
+    "solution": [
+      "c8c3",
+      "b2c3",
+      "a5c3",
+      "g6c2",
+      "c3e3"
+    ],
+    "rating": 1403,
+    "themes": [
+      "crushing",
+      "fork",
+      "long",
+      "middlegame"
+    ],
+    "matched_theme": "fork",
+    "source_url": "https://lichess.org/KeL5ssRX#41"
+  },
+  {
+    "id": "x1HSs",
+    "fen": "3q1rk1/1prn2b1/3N2bp/3Ppppn/1P2P3/1B3P1P/N3Q1PB/2R2RK1 b - - 0 26",
+    "solution": [
+      "c7c1",
+      "f1c1",
+      "d8b6",
+      "g1h1",
+      "b6d6"
+    ],
+    "rating": 1628,
+    "themes": [
+      "advantage",
+      "clearance",
+      "fork",
+      "long",
+      "master",
+      "middlegame"
+    ],
+    "matched_theme": "fork",
+    "source_url": "https://lichess.org/8KQhT5A1#51"
+  },
+  {
+    "id": "8LIhQ",
+    "fen": "6nk/1b2q2p/p2p1Rp1/3P4/PP1BP3/7P/6r1/5QK1 w - - 0 36",
+    "solution": [
+      "g1h1",
+      "e7e4",
+      "f6f4",
+      "e4d4",
+      "f4d4"
+    ],
+    "rating": 1786,
+    "themes": [
+      "crushing",
+      "defensiveMove",
+      "discoveredAttack",
+      "discoveredCheck",
+      "long",
+      "middlegame"
+    ],
+    "matched_theme": "discoveredAttack",
+    "source_url": "https://lichess.org/vKNn32sa/black#70"
+  },
+  {
+    "id": "NfPAX",
+    "fen": "5Q2/p5pk/1p3n1p/8/4p3/1R5P/P1P1q1P1/7K b - - 1 31",
+    "solution": [
+      "e2f1",
+      "h1h2",
+      "f6g4",
+      "h3g4",
+      "f1f8"
+    ],
+    "rating": 1534,
+    "themes": [
+      "crushing",
+      "discoveredAttack",
+      "endgame",
+      "long"
+    ],
+    "matched_theme": "discoveredAttack",
+    "source_url": "https://lichess.org/zL3xZNgr#61"
+  },
+  {
+    "id": "im2Hm",
+    "fen": "3r4/1b2np1k/pn2p1pp/2q5/4P1N1/PB1P1P2/6PP/Q4R1K w - - 6 26",
+    "solution": [
+      "g4f6",
+      "h7h8",
+      "f6d7",
+      "h8g8",
+      "d7c5"
+    ],
+    "rating": 1493,
+    "themes": [
+      "crushing",
+      "discoveredAttack",
+      "discoveredCheck",
+      "long",
+      "middlegame"
+    ],
+    "matched_theme": "discoveredAttack",
+    "source_url": "https://lichess.org/InrjNkUL/black#50"
+  }
+];
+
+var LESSONS_4PLUS = [
+  {
+    "id": "AepFQ",
+    "fen": "1Q6/2qkpp2/3p4/3p1PP1/pR1P4/2r5/P4P2/1K6 w - - 4 34",
+    "solution": [
+      "b4b7",
+      "c3c1",
+      "b1b2",
+      "a4a3",
+      "b2a3",
+      "c7b7",
+      "b8b7"
+    ],
+    "rating": 1183,
+    "themes": [
+      "crushing",
+      "endgame",
+      "pin",
+      "veryLong"
+    ],
+    "matched_theme": "pin",
+    "source_url": "https://lichess.org/FCy3wl9i/black#66"
+  },
+  {
+    "id": "qkvtU",
+    "fen": "7k/pppbq1rN/2np4/5P2/3bPR2/7Q/P5PP/1N5K w - - 2 21",
+    "solution": [
+      "h7f6",
+      "g7h7",
+      "f6h7",
+      "e7h7",
+      "f4h4",
+      "h7h4",
+      "h3h4"
+    ],
+    "rating": 1929,
+    "themes": [
+      "crushing",
+      "discoveredAttack",
+      "discoveredCheck",
+      "kingsideAttack",
+      "middlegame",
+      "pin",
+      "veryLong"
+    ],
+    "matched_theme": "pin",
+    "source_url": "https://lichess.org/xbOpYhuJ/black#40"
+  },
+  {
+    "id": "oLRhW",
+    "fen": "8/2k2p2/2q5/6p1/P5Q1/8/KPP5/8 b - - 10 56",
+    "solution": [
+      "c6e6",
+      "g4e6",
+      "f7e6",
+      "a2b3",
+      "g5g4",
+      "b3c3",
+      "g4g3",
+      "c3d4",
+      "g3g2"
+    ],
+    "rating": 1461,
+    "themes": [
+      "advancedPawn",
+      "crushing",
+      "endgame",
+      "queenEndgame",
+      "quietMove",
+      "veryLong"
+    ],
+    "matched_theme": "crushing",
+    "source_url": "https://lichess.org/dQpnYd9T#111"
+  },
+  {
+    "id": "FtNTt",
+    "fen": "1r2k1r1/2pq3p/2pbp3/Q2pB3/8/P4P2/1P3PPP/R3R1K1 b - - 1 21",
+    "solution": [
+      "d6e5",
+      "e1e5",
+      "d7g7",
+      "e5e6",
+      "e8d7",
+      "g2g3",
+      "d7e6"
+    ],
+    "rating": 1665,
+    "themes": [
+      "advantage",
+      "middlegame",
+      "veryLong"
+    ],
+    "matched_theme": "advantage",
+    "source_url": "https://lichess.org/m6iYYtPo#41"
+  },
+  {
+    "id": "cCoJb",
+    "fen": "8/8/5pkp/3P2p1/3r4/4KP1P/8/8 w - - 0 46",
+    "solution": [
+      "e3d4",
+      "g6f7",
+      "d4c5",
+      "f7e7",
+      "c5c6",
+      "e7d8",
+      "c6d6"
+    ],
+    "rating": 1655,
+    "themes": [
+      "crushing",
+      "defensiveMove",
+      "endgame",
+      "veryLong"
+    ],
+    "matched_theme": "crushing",
+    "source_url": "https://lichess.org/3EFQ7DML/black#90"
+  }
+];
+
+</script>
+</body>
+</html>
